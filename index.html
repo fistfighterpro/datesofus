@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Special Dates</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff4081; /* Pink-Red */
+            --secondary-color: #fce4ec; /* Light Pink */
+            --background-color: #f7f7f7;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+        }
+        .main-card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--secondary-color);
+        }
+        .date-item {
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .date-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background-color: #e91e63; /* Darker Pink */
+            transform: translateY(-1px);
+        }
+        .loading-overlay {
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 100;
+        }
+        /* Custom scrollbar for aesthetics */
+        #dates-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        #dates-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+        #dates-list::-webkit-scrollbar-track {
+            background: var(--secondary-color);
+        }
+        /* Lock screen style */
+        #lock-screen {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Lock Screen / Passcode Input (Z-index 50 to ensure it's on top) -->
+    <div id="lock-screen" class="fixed inset-0 bg-pink-500 bg-opacity-95 flex items-center justify-center p-8 z-50 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm text-center transform transition duration-500">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Enter Shared Passcode</h3>
+            <p class="text-sm text-gray-600 mb-6">Only users with the secret code can access this special place.</p>
+            <form id="passcode-form">
+                <input type="password" id="passcode-input" placeholder="Passcode" required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-xl tracking-widest focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150">
+                <button type="submit" class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md mt-4 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-pink-500 focus:ring-opacity-50">
+                    Unlock
+                </button>
+                <p id="passcode-error" class="text-red-500 text-sm mt-3 hidden">Incorrect passcode. Try again.</p>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay fixed inset-0 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-t-4 border-red-500"></div>
+    </div>
+
+    <div class="w-full max-w-4xl lg:flex main-card bg-white rounded-xl overflow-hidden shadow-lg">
+        
+        <!-- Left Panel: Add Date Form -->
+        <div class="lg:w-1/3 p-6 sm:p-8 border-b lg:border-r border-gray-100 bg-gray-50">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Mark a Special Date</h1>
+            <!-- Auth status now shows the local storage mode -->
+            <p id="auth-status" class="text-xs text-pink-600 font-semibold mb-4">Using Local Storage (Data not synced)</p>
+
+            <form id="add-date-form">
+                <div class="mb-4">
+                    <label for="date-name" class="block text-sm font-medium text-gray-700 mb-1">Occasion Name</label>
+                    <input type="text" id="date-name" required placeholder="e.g., Anniversary, Birthday"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150">
+                </div>
+
+                <div class="mb-4">
+                    <label for="date-input" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" id="date-input" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150">
+                </div>
+
+                <div class="mb-6">
+                    <label for="date-description" class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <textarea id="date-description" rows="3" placeholder="A sweet memory or plan for the day..."
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150"></textarea>
+                </div>
+
+                <button type="submit" id="add-date-btn" class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-pink-500 focus:ring-opacity-50 flex items-center justify-center" disabled>
+                    <span id="btn-text">Add Date</span>
+                    <svg id="btn-spinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Right Panel: Dates List -->
+        <div class="lg:w-2/3 p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                Upcoming & Past Memories 
+                <span class="ml-3 text-xs font-normal bg-pink-100 text-pink-700 px-3 py-1 rounded-full" id="total-dates">0 Dates</span>
+            </h2>
+            
+            <div id="dates-list" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <!-- Date items will be injected here by JavaScript -->
+                <p id="list-message" class="text-gray-500 italic text-center p-8">Loading dates...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for messages -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+            <h3 id="modal-title" class="text-xl font-semibold mb-3 text-gray-800"></h3>
+            <p id="modal-message" class="mb-4 text-gray-600"></p>
+            <div id="modal-actions" class="flex justify-end space-x-2">
+                <button id="modal-cancel" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+                <button id="modal-confirm" class="px-4 py-2 btn-primary text-white rounded-lg hover:bg-red-600 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic (Local Storage) -->
+    <script type="module">
+        // Global status flag
+        let isAppReady = false;
+        
+        // --- Local Storage Key ---
+        const SPECIAL_DATES_STORAGE_KEY = 'special_dates_v1';
+        
+        // --- IMPORTANT: SHARED PASSCODE CONFIGURATION ---
+        // !!! YOU MUST CHANGE THIS TO YOUR OWN SECRET PASSCODE !!!
+        const SHARED_PASSCODE = "seven"; 
+        // ----------------------------------------------------
+
+        const authStatusEl = document.getElementById('auth-status');
+        const datesListEl = document.getElementById('dates-list');
+        const totalDatesEl = document.getElementById('total-dates');
+        const formEl = document.getElementById('add-date-form');
+        const dateNameInput = document.getElementById('date-name');
+        const dateInput = document.getElementById('date-input');
+        const dateDescriptionInput = document.getElementById('date-description');
+        const addDateBtn = document.getElementById('add-date-btn');
+        const listMessageEl = document.getElementById('list-message');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        // Lock screen elements
+        const lockScreenEl = document.getElementById('lock-screen');
+        const passcodeForm = document.getElementById('passcode-form');
+        const passcodeInput = document.getElementById('passcode-input');
+        const passcodeError = document.getElementById('passcode-error');
+
+
+        /**
+         * Converts date string (YYYY-MM-DD) to a readable relative string.
+         * @param {string} dateString 
+         * @returns {string} Relative time and a sentiment phrase.
+         */
+        function getRelativeTime(dateString) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); // Normalize 'now' to midnight
+            const date = new Date(dateString + 'T00:00:00'); // Ensure date is interpreted as midnight local time
+
+            const diffTime = date.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return '<span class="text-yellow-600 font-bold">Today!</span> - Make it special!';
+            } else if (diffDays === 1) {
+                return '<span class="text-orange-600 font-bold">Tomorrow!</span> - Get ready!';
+            } else if (diffDays > 0) {
+                return `<span class="font-bold">${diffDays} day${diffDays !== 1 ? 's' : ''} left</span> - Counting down!`;
+            } else {
+                const daysPassed = Math.abs(diffDays);
+                return `<span class="text-green-600 font-bold">${daysPassed} day${daysPassed !== 1 ? 's' : ''} ago</span> - Cherished memory.`;
+            }
+        }
+
+        /**
+         * Displays a custom confirmation modal.
+         * @param {string} title - The modal title.
+         * @param {string} message - The modal body message.
+         * @param {function} onConfirm - Function to run on confirm.
+         */
+        function showConfirmModal(title, message, onConfirm) {
+            const container = document.getElementById('modal-container');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            // Clear previous listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                onConfirm();
+            });
+
+            newCancelBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            });
+            
+            // For delete confirmation, ensure cancel button is visible
+            newCancelBtn.classList.remove('hidden');
+
+            // If it's just an error/info message, hide the cancel button
+            if (title === "Error" || title === "Missing Info") {
+                newCancelBtn.classList.add('hidden');
+            }
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+        }
+
+        /**
+         * Renders the list of dates from local data.
+         * @param {Array<Object>} dates - Array of date objects.
+         */
+        function renderDates(dates) {
+            datesListEl.innerHTML = '';
+            
+            // 1. Sort the dates
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            dates.sort((a, b) => {
+                const dateA = new Date(a.dateString + 'T00:00:00');
+                const dateB = new Date(b.dateString + 'T00:00:00');
+
+                const isUpcomingA = dateA >= today;
+                const isUpcomingB = dateB >= today;
+
+                if (isUpcomingA && !isUpcomingB) return -1; 
+                if (!isUpcomingA && isUpcomingB) return 1;  
+
+                if (isUpcomingA && isUpcomingB) {
+                    // Both upcoming: closest date first
+                    return dateA.getTime() - dateB.getTime();
+                } else {
+                    // Both past: most recent date first
+                    return dateB.getTime() - dateA.getTime();
+                }
+            });
+
+            totalDatesEl.textContent = `${dates.length} Date${dates.length !== 1 ? 's' : ''}`;
+
+            if (dates.length === 0) {
+                datesListEl.innerHTML = `<p class="text-gray-500 italic text-center p-8">No special dates yet! Add one using the form on the left.</p>`;
+                return;
+            }
+
+            dates.forEach(date => {
+                const relativeTime = getRelativeTime(date.dateString);
+                
+                const dateObj = new Date(date.dateString + 'T00:00:00');
+                const month = dateObj.toLocaleString('en-US', { month: 'short' });
+                const day = dateObj.getDate();
+                const year = dateObj.getFullYear();
+
+                const dateItem = document.createElement('div');
+                dateItem.className = 'date-item bg-white p-4 rounded-xl shadow-sm flex space-x-4 items-center';
+                dateItem.dataset.id = date.id;
+
+                dateItem.innerHTML = `
+                    <!-- Date Stamp -->
+                    <div class="flex-shrink-0 text-center p-2 bg-secondary-color rounded-lg w-16">
+                        <div class="text-xs font-medium text-primary-color uppercase leading-none">${month}</div>
+                        <div class="text-2xl font-bold text-gray-800 leading-none">${day}</div>
+                        <div class="text-xs font-medium text-gray-500 leading-none">${year}</div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-grow min-w-0">
+                        <div class="text-xl font-semibold text-gray-800 truncate">${date.name}</div>
+                        <div class="text-sm text-gray-600 mt-0.5">${date.description}</div>
+                        <div class="text-xs text-gray-500 mt-1">${relativeTime}</div>
+                    </div>
+
+                    <!-- Delete Button -->
+                    <button class="delete-btn flex-shrink-0 text-red-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50" data-id="${date.id}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                datesListEl.appendChild(dateItem);
+            });
+
+            // Attach delete listeners
+            datesListEl.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const dateItem = datesListEl.querySelector(`[data-id="${id}"]`);
+                    const dateName = dateItem.querySelector('.text-xl').textContent;
+                    
+                    showConfirmModal(
+                        "Delete Date?",
+                        `Are you sure you want to remove the special date: "${dateName}"?`,
+                        () => deleteDate(id)
+                    );
+                });
+            });
+        }
+
+        /**
+         * Loads dates from Local Storage and updates the UI.
+         */
+        function loadDatesLocal() {
+            loadingOverlay.classList.remove('hidden');
+            listMessageEl.classList.add('hidden');
+
+            try {
+                const datesJson = localStorage.getItem(SPECIAL_DATES_STORAGE_KEY);
+                const dates = datesJson ? JSON.parse(datesJson) : [];
+                renderDates(dates);
+            } catch (error) {
+                console.error("Error loading dates from local storage:", error);
+                listMessageEl.textContent = "Error loading dates. Local storage might be corrupted.";
+                listMessageEl.classList.remove('hidden');
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Saves the array of dates back to Local Storage.
+         * @param {Array<Object>} dates - The array of dates to save.
+         */
+        function saveDatesLocal(dates) {
+            try {
+                localStorage.setItem(SPECIAL_DATES_STORAGE_KEY, JSON.stringify(dates));
+                loadDatesLocal(); // Reloads and re-renders
+            } catch (error) {
+                console.error("Error saving to local storage:", error);
+                showConfirmModal("Error", "Could not save data to your browser's local storage.", () => {});
+            }
+        }
+
+        /**
+         * Adds a new date to the local storage.
+         */
+        function addDate(e) {
+            e.preventDefault();
+
+            if (!isAppReady) return; // Should not happen if button is disabled correctly
+
+            const name = dateNameInput.value.trim();
+            const dateString = dateInput.value; // YYYY-MM-DD format
+            const description = dateDescriptionInput.value.trim() || 'No description provided.';
+
+            if (!name || !dateString) {
+                showConfirmModal("Missing Info", "Please provide a name and a date.", () => {});
+                return;
+            }
+
+            addDateBtn.disabled = true;
+            document.getElementById('btn-text').textContent = 'Adding...';
+            document.getElementById('btn-spinner').classList.remove('hidden');
+
+            try {
+                const datesJson = localStorage.getItem(SPECIAL_DATES_STORAGE_KEY);
+                const dates = datesJson ? JSON.parse(datesJson) : [];
+                
+                const newDate = {
+                    id: Date.now().toString(), // Generate a unique ID
+                    name,
+                    dateString,
+                    description,
+                    createdAt: new Date().toISOString()
+                };
+
+                dates.push(newDate);
+                saveDatesLocal(dates);
+
+                // Success: Clear form
+                formEl.reset();
+                dateNameInput.focus();
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showConfirmModal("Error", "Could not save date locally.", () => {});
+            } finally {
+                addDateBtn.disabled = false;
+                document.getElementById('btn-text').textContent = 'Add Date';
+                document.getElementById('btn-spinner').classList.add('hidden');
+            }
+        }
+
+        /**
+         * Deletes a date from the local storage.
+         * @param {string} dateId - The ID of the document to delete.
+         */
+        function deleteDate(dateId) {
+            try {
+                const datesJson = localStorage.getItem(SPECIAL_DATES_STORAGE_KEY);
+                const dates = datesJson ? JSON.parse(datesJson) : [];
+                
+                const updatedDates = dates.filter(date => date.id !== dateId);
+                
+                saveDatesLocal(updatedDates);
+                console.log("Document successfully deleted locally!");
+
+            } catch (error) {
+                console.error("Error removing document: ", error);
+                showConfirmModal("Error", "Could not delete date locally.", () => {});
+            }
+        }
+
+        /**
+         * Initializes the local storage application after passcode check.
+         */
+        function initializeLocalApp() {
+            isAppReady = true;
+            addDateBtn.disabled = false;
+            loadDatesLocal(); // Load data initially
+            loadingOverlay.classList.add('hidden');
+        }
+
+        /**
+         * Handles the passcode submission and unlocks the app.
+         * @param {Event} e - Submit event.
+         */
+        function handlePasscodeCheck(e) {
+            e.preventDefault();
+            const enteredPasscode = passcodeInput.value.trim();
+
+            if (enteredPasscode === SHARED_PASSCODE) {
+                passcodeError.classList.add('hidden');
+                
+                // Animate lock screen away
+                lockScreenEl.classList.add('scale-0', 'opacity-0');
+                
+                // Delay hiding the screen until the animation completes
+                setTimeout(() => {
+                    lockScreenEl.classList.add('hidden');
+                    // Start the application logic
+                    initializeLocalApp();
+                }, 500); // Match transition duration
+
+            } else {
+                passcodeError.textContent = "Incorrect passcode. Try again.";
+                passcodeError.classList.remove('hidden');
+                passcodeInput.value = '';
+                passcodeInput.focus();
+            }
+        }
+
+        // --- Event Listeners and Initial Call ---
+        window.onload = function() {
+            // 1. Show the lock screen and attach its handler
+            lockScreenEl.classList.remove('hidden'); 
+            passcodeForm.addEventListener('submit', handlePasscodeCheck);
+            passcodeInput.focus();
+
+            // 2. Attach the regular form handler
+            formEl.addEventListener('submit', addDate);
+        };
+
+        // Enable button when inputs are filled 
+        [dateNameInput, dateInput].forEach(input => {
+            input.addEventListener('input', () => {
+                // Button is only enabled if input is valid AND the app is initialized
+                if (dateNameInput.value.trim() && dateInput.value && isAppReady) {
+                    addDateBtn.disabled = false;
+                } else {
+                    addDateBtn.disabled = true;
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
