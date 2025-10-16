@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Special Dates (Local)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff4081;
+            /* Pink-Red */
+            --secondary-color: #fce4ec;
+            /* Light Pink */
+            --background-color: #f7f7f7;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+        }
+
+        .main-card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--secondary-color);
+        }
+
+        .date-item {
+            /* Dynamically set border color based on upcoming/past */
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .date-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background-color: #e91e63;
+            /* Darker Pink */
+            transform: translateY(-1px);
+        }
+
+        .loading-overlay {
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 100;
+        }
+
+        /* Custom scrollbar for aesthetics */
+        #dates-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #dates-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        #dates-list::-webkit-scrollbar-track {
+            background: var(--secondary-color);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Loading Overlay (simplified, hidden by default as there's no async load) -->
+    <div id="loading-overlay" class="loading-overlay fixed inset-0 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-t-4 border-red-500"></div>
+    </div>
+
+    <div class="w-full max-w-4xl lg:flex main-card bg-white rounded-xl overflow-hidden shadow-lg">
+
+        <!-- Left Panel: Add Date Form -->
+        <div class="lg:w-1/3 p-6 sm:p-8 border-b lg:border-r border-gray-100 bg-gray-50">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Mark a Special Date</h1>
+            <p class="text-xs text-gray-500 mb-4">Data is saved locally in your browser (LocalStorage).</p>
+
+            <form id="add-date-form">
+                <div class="mb-4">
+                    <label for="date-name" class="block text-sm font-medium text-gray-700 mb-1">Occasion Name</label>
+                    <input type="text" id="date-name" required placeholder="e.g., Anniversary, Birthday"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150">
+                </div>
+
+                <div class="mb-4">
+                    <label for="date-input" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" id="date-input" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150">
+                </div>
+
+                <div class="mb-6">
+                    <label for="date-description" class="block text-sm font-medium text-gray-700 mb-1">Description
+                        (Optional)</label>
+                    <textarea id="date-description" rows="3" placeholder="A sweet memory or plan for the day..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition duration-150"></textarea>
+                </div>
+
+                <button type="submit" id="add-date-btn"
+                    class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-pink-500 focus:ring-opacity-50 flex items-center justify-center">
+                    <span id="btn-text">Add Date</span>
+                    <svg id="btn-spinner" class="animate-spin h-5 w-5 text-white ml-2 hidden"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Right Panel: Dates List -->
+        <div class="lg:w-2/3 p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                Upcoming & Past Memories
+                <span class="ml-3 text-xs font-normal bg-pink-100 text-pink-700 px-3 py-1 rounded-full"
+                    id="total-dates">0 Dates</span>
+            </h2>
+
+            <div id="dates-list" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <!-- Date items will be injected here by JavaScript -->
+                <p id="list-message" class="text-gray-500 italic text-center p-8">Add your first special date on the
+                    left!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for messages -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+            <h3 id="modal-title" class="text-xl font-semibold mb-3 text-gray-800"></h3>
+            <p id="modal-message" class="mb-4 text-gray-600"></p>
+            <div id="modal-actions" class="flex justify-end space-x-2">
+                <button id="modal-cancel"
+                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">Cancel</button>
+                <button id="modal-confirm"
+                    class="px-4 py-2 btn-primary text-white rounded-lg hover:bg-red-600 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        const LOCAL_STORAGE_KEY = 'specialDatesTrackerData';
+        let localDates = []; // Stores the array of date objects
+
+        // --- DOM Elements ---
+        const datesListEl = document.getElementById('dates-list');
+        const totalDatesEl = document.getElementById('total-dates');
+        const formEl = document.getElementById('add-date-form');
+        const dateNameInput = document.getElementById('date-name');
+        const dateInput = document.getElementById('date-input');
+        const dateDescriptionInput = document.getElementById('date-description');
+        const addDateBtn = document.getElementById('add-date-btn');
+        const listMessageEl = document.getElementById('list-message');
+        const btnTextEl = document.getElementById('btn-text');
+        const btnSpinnerEl = document.getElementById('btn-spinner');
+
+        // --- Local Persistence Functions ---
+
+        /**
+         * Loads dates from localStorage.
+         */
+        function loadDates() {
+            try {
+                const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                localDates = data ? JSON.parse(data) : [];
+                // Ensure unique IDs for new dates (using a simple counter, though UUID is better for robustness)
+                if (localDates.length > 0) {
+                    let maxId = 0;
+                    localDates.forEach(d => {
+                        const idNum = parseInt(d.id.split('-')[1]);
+                        if (!isNaN(idNum) && idNum > maxId) {
+                            maxId = idNum;
+                        }
+                    });
+                    lastId = maxId;
+                }
+            } catch (error) {
+                console.error("Error loading dates from localStorage:", error);
+                localDates = [];
+            }
+        }
+
+        /**
+         * Saves the current dates array to localStorage.
+         */
+        function saveDates() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localDates));
+                renderDates(localDates);
+            } catch (error) {
+                console.error("Error saving dates to localStorage:", error);
+                showConfirmModal("Save Error", "Could not save data locally. Your browser storage may be full.", () => { });
+            }
+        }
+
+
+        // --- Utility Functions ---
+        let lastId = 0;
+        function getUniqueId() {
+            lastId++;
+            return `date-${lastId}-${Date.now()}`;
+        }
+
+        /**
+         * Calculates the next occurrence of a recurring annual date.
+         * Used to correctly calculate days remaining/passed for yearly events.
+         * @param {string} dateString - YYYY-MM-DD
+         * @returns {Date} The next relevant date object.
+         */
+        function getNextOccurrence(dateString) {
+            const date = new Date(dateString + 'T00:00:00');
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            // Date for the current year, using the month/day from the input date
+            let nextDate = new Date(now.getFullYear(), date.getMonth(), date.getDate());
+
+            // If the date has already passed this year, set it for next year
+            if (nextDate < now) {
+                nextDate.setFullYear(now.getFullYear() + 1);
+            }
+            return nextDate;
+        }
+
+        /**
+         * Converts date string (YYYY-MM-DD) to a readable relative string and provides the next date object.
+         * @param {string} dateString 
+         * @returns {{relativeText: string, date: Date, isUpcoming: boolean}} 
+         */
+        function getRelativeTimeAndDate(dateString) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            // Calculate the next occurrence for accurate countdown/memory tracking
+            const nextRelevantDate = getNextOccurrence(dateString);
+            const date = new Date(dateString + 'T00:00:00');
+
+            // Special case for dates in the past that are not recurring (like a one-time event)
+            let diffTime = 0;
+            let dateToCompare = date;
+
+            // Heuristic: If the input year is older than the current year and the date is NOT today/future this year,
+            // we treat it as a passed memory, not an upcoming recurrence.
+            if (date.getFullYear() < now.getFullYear() && date.getTime() < now.getTime()) {
+                // If it's a date from a past year, just calculate days passed
+                diffTime = date.getTime() - now.getTime();
+                dateToCompare = date;
+            } else {
+                // Otherwise, use the next relevant date (for recurring events or dates in the current/future year)
+                diffTime = nextRelevantDate.getTime() - now.getTime();
+                dateToCompare = nextRelevantDate;
+            }
+
+
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const isUpcoming = diffDays >= 0;
+
+            let relativeText;
+            if (diffDays === 0) {
+                relativeText = '<span class="text-yellow-600 font-bold">Today!</span> - Make it special!';
+            } else if (diffDays === 1) {
+                relativeText = '<span class="text-orange-600 font-bold">Tomorrow!</span> - Get ready!';
+            } else if (diffDays > 0) {
+                relativeText = `<span class="font-bold">${diffDays} day${diffDays !== 1 ? 's' : ''} left</span> - Counting down!`;
+            } else {
+                const daysPassed = Math.abs(diffDays);
+                relativeText = `<span class="text-green-600 font-bold">${daysPassed} day${daysPassed !== 1 ? 's' : ''} ago</span> - Cherished memory.`;
+            }
+
+            return { relativeText, date: dateToCompare, isUpcoming };
+        }
+
+
+        // --- UI & Modal Functions ---
+
+        /**
+         * Displays a custom confirmation modal.
+         */
+        function showConfirmModal(title, message, onConfirm, showCancel = true) {
+            const container = document.getElementById('modal-container');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+
+            // Manage button visibility and text
+            cancelBtn.classList.toggle('hidden', !showCancel);
+            confirmBtn.textContent = showCancel ? 'Confirm' : 'Close';
+
+            // Clone to clear previous listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                onConfirm();
+            });
+
+            newCancelBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            });
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+        }
+
+        /**
+         * Renders the list of dates from localDates array.
+         * @param {Array<Object>} dates - Array of date objects.
+         */
+        function renderDates(dates) {
+            datesListEl.innerHTML = '';
+
+            // Process dates with relative time and next occurrence for accurate sorting
+            const processedDates = dates.map(date => {
+                const { relativeText, date: sortDate, isUpcoming } = getRelativeTimeAndDate(date.dateString);
+                return {
+                    ...date,
+                    relativeText,
+                    sortDate,
+                    isUpcoming
+                };
+            });
+
+            // 1. Sort the processed dates
+            processedDates.sort((a, b) => {
+                const isUpcomingA = a.isUpcoming;
+                const isUpcomingB = b.isUpcoming;
+
+                if (isUpcomingA && !isUpcomingB) return -1; // A (upcoming) comes before B (past)
+                if (!isUpcomingA && isUpcomingB) return 1;  // B (upcoming) comes before A (past)
+
+                // Sort based on time difference (closest first for upcoming, most recent first for past)
+                return a.sortDate.getTime() - b.sortDate.getTime();
+            });
+
+            totalDatesEl.textContent = `${dates.length} Date${dates.length !== 1 ? 's' : ''}`;
+
+            if (dates.length === 0) {
+                datesListEl.innerHTML = `<p class="text-gray-500 italic text-center p-8">No special dates yet! Add one using the form on the left.</p>`;
+                return;
+            }
+
+            processedDates.forEach(date => {
+                const dateObj = new Date(date.dateString + 'T00:00:00');
+                const month = dateObj.toLocaleString('en-US', { month: 'short' });
+                const day = dateObj.getDate();
+                const year = dateObj.getFullYear();
+
+                // Set border color based on status
+                const borderColor = date.isUpcoming ? 'border-primary-color' : 'border-green-500';
+
+                const dateItem = document.createElement('div');
+                dateItem.className = `date-item bg-white p-4 rounded-xl shadow-sm flex space-x-4 items-center ${borderColor.replace('border-', 'border-l-')}`;
+                dateItem.dataset.id = date.id;
+
+                dateItem.innerHTML = `
+                    <!-- Date Stamp -->
+                    <div class="flex-shrink-0 text-center p-2 bg-secondary-color rounded-lg w-16">
+                        <div class="text-xs font-medium text-primary-color uppercase leading-none">${month}</div>
+                        <div class="text-2xl font-bold text-gray-800 leading-none">${day}</div>
+                        <div class="text-xs font-medium text-gray-500 leading-none">${year}</div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-grow min-w-0">
+                        <div class="text-xl font-semibold text-gray-800 truncate">${date.name}</div>
+                        <div class="text-sm text-gray-600 mt-0.5">${date.description}</div>
+                        <div class="text-xs text-gray-500 mt-1">${date.relativeText}</div>
+                    </div>
+
+                    <!-- Delete Button -->
+                    <button class="delete-btn flex-shrink-0 text-red-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50" data-id="${date.id}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                datesListEl.appendChild(dateItem);
+            });
+
+            // Attach delete listeners
+            datesListEl.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const dateItem = datesListEl.querySelector(`[data-id="${id}"]`);
+                    const dateName = dateItem.querySelector('.text-xl').textContent;
+
+                    showConfirmModal(
+                        "Delete Date?",
+                        `Are you sure you want to remove the special date: "${dateName}"?`,
+                        () => deleteDate(id)
+                    );
+                });
+            });
+            listMessageEl.classList.add('hidden');
+        }
+
+        // --- CRUD Operations (Local) ---
+
+        /**
+         * Adds a new date to the local array.
+         */
+        function addDate(e) {
+            e.preventDefault();
+
+            const name = dateNameInput.value.trim();
+            const dateString = dateInput.value; // YYYY-MM-DD format
+            const description = dateDescriptionInput.value.trim() || 'No description provided.';
+
+            if (!name || !dateString) return;
+
+            // Show loading state
+            addDateBtn.disabled = true;
+            btnTextEl.textContent = 'Adding...';
+            btnSpinnerEl.classList.remove('hidden');
+
+            try {
+                const newDate = {
+                    id: getUniqueId(),
+                    name,
+                    dateString,
+                    description,
+                    createdAt: new Date().toISOString()
+                };
+
+                localDates.push(newDate);
+                saveDates(); // Renders the updated list
+
+                // Success: Clear form
+                formEl.reset();
+                dateNameInput.focus();
+
+            } catch (error) {
+                console.error("Error adding date locally: ", error);
+                showConfirmModal("Error", "Could not save date locally.", () => { }, false);
+
+            } finally {
+                // Restore button state
+                addDateBtn.disabled = false;
+                btnTextEl.textContent = 'Add Date';
+                btnSpinnerEl.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Deletes a date from the local array.
+         * @param {string} dateId - The ID of the document to delete.
+         */
+        function deleteDate(dateId) {
+            const initialLength = localDates.length;
+            localDates = localDates.filter(date => date.id !== dateId);
+
+            if (localDates.length < initialLength) {
+                saveDates();
+            } else {
+                console.warn("Date not found for deletion:", dateId);
+            }
+        }
+
+
+        // --- Event Listeners and Initial Call ---
+        window.onload = function () {
+            loadDates();
+            renderDates(localDates);
+
+            formEl.addEventListener('submit', addDate);
+
+            // Simple client-side validation
+            [dateNameInput, dateInput].forEach(input => {
+                input.addEventListener('input', () => {
+                    addDateBtn.disabled = !(dateNameInput.value.trim() && dateInput.value);
+                });
+            });
+
+            // Initial check for button state
+            addDateBtn.disabled = true;
+        };
+
+    </script>
+</body>
+
+</html>
