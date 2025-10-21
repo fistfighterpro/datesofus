@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Shared Special Dates</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ec4899' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E" type="image/svg+xml">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Colors for Theme */
+        :root {
+            --primary-color: #ec4899; /* Pink-500 */
+            --secondary-color: #fce7f3; /* Pink-100 */
+        }
+        .bg-primary-color { background-color: var(--primary-color); }
+        .text-primary-color { color: var(--primary-color); }
+        .bg-secondary-color { background-color: var(--secondary-color); }
+        .btn-primary { 
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #db2777; /* Pink-600 */
+        }
+        /* Custom Scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #fbcfe8; /* Pink-200 */
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #f472b6; /* Pink-400 */
+        }
+        /* Lock screen transition for smooth fading */
+        .lock-screen {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-70 z-50 flex items-center justify-center hidden">
+        <div class="flex flex-col items-center">
+            <svg class="animate-spin h-10 w-10 text-primary-color" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-gray-700 font-medium">Loading your special dates...</p>
+        </div>
+    </div>
+
+    <div id="lock-screen" class="lock-screen fixed inset-0 bg-primary-color bg-opacity-95 z-40 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm text-center">
+            <svg class="w-16 h-16 text-primary-color mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-2 4h4M7 9v4a5 5 0 0010 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2zm8 0h2a2 2 0 012 2v2M7 9H5a2 2 0 00-2 2v2"></path></svg>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Our Private Space</h2>
+            <p class="text-gray-600 mb-6">Please enter the shared passcode to view and edit our special dates.</p>
+            <form id="passcode-form">
+                <input type="password" id="passcode-input" placeholder="Enter Passcode" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-primary-color focus:border-primary-color text-lg text-center" required>
+                <p id="passcode-error" class="text-red-500 text-sm mt-2 hidden"></p>
+                <button type="submit" class="w-full mt-6 btn-primary text-white font-semibold py-3 rounded-lg hover:bg-pink-700 transition">Unlock Memories</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 flex items-center">
+                <svg class="w-10 h-10 text-primary-color mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-4 4V3M3 19h18M5 7v12h14V7H5z"></path></svg>
+                Shared Special Dates
+            </h1>
+            <p class="text-gray-500 mt-2">A synchronized list of all our important anniversaries, birthdays, and reminders.</p>
+            <div class="mt-4 flex flex-wrap gap-4 items-center text-sm">
+                <span class="font-medium text-gray-700">Database Status:</span>
+                <span id="authState" class="font-bold text-green-600">Connecting...</span>
+                <span id="userInfo" class="text-gray-500"></span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-secondary-color sticky top-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 text-primary-color mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Add New Date
+                    </h2>
+                    <form id="add-date-form" class="space-y-4">
+                        <div>
+                            <label for="date-name" class="block text-sm font-medium text-gray-700">Name of Date <span class="text-red-500">*</span></label>
+                            <input type="text" id="date-name" required placeholder="e.g., Anniversary, Birthday, First Date" class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary-color focus:border-primary-color">
+                        </div>
+                        <div>
+                            <label for="date-input" class="block text-sm font-medium text-gray-700">Date <span class="text-red-500">*</span></label>
+                            <input type="date" id="date-input" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary-color focus:border-primary-color">
+                        </div>
+                        <div>
+                            <label for="date-description" class="block text-sm font-medium text-gray-700">Description (Optional)</label>
+                            <textarea id="date-description" rows="3" placeholder="e.g., We went to Paris that day..." class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary-color focus:border-primary-color"></textarea>
+                        </div>
+                        <button type="submit" id="add-date-btn" class="w-full btn-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700 transition flex items-center justify-center" disabled>
+                            <span id="btn-spinner" class="animate-spin h-5 w-5 mr-3 text-white hidden">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            </span>
+                            <span id="btn-text">Add Shared Date</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-2xl font-bold text-gray-800">
+                        Upcoming & Past Events (<span id="total-dates">0 Dates</span>)
+                    </h2>
+                    <button id="export-btn" class="bg-gray-200 text-gray-700 text-sm font-medium py-1.5 px-3 rounded-lg hover:bg-gray-300 transition disabled:opacity-50" disabled>
+                        Export CSV
+                    </button>
+                </div>
+                
+                <p id="list-message" class="text-center text-gray-500 italic p-4 hidden">Syncing shared memories...</p>
+                
+                <div id="dates-list" class="space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    <p class="text-gray-500 italic text-center p-8">Loading initial list...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-container" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-50 items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 m-4 max-w-sm w-full">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-4">Confirmation</h3>
+            <p id="modal-message" class="text-gray-700 mb-6">Are you sure you want to proceed?</p>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-cancel" class="bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+                <button id="modal-confirm" class="btn-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- IMPORTANT: AIRTABLE CONFIGURATION ---
+        // !!! PASTE YOUR FULL AIRTABLE PERSONAL ACCESS TOKEN HERE !!!
+        const AIRTABLE_API_TOKEN = "patoqL3PzZgaftcxH.9dcfc64de1fe199ba78ea6af6004f7d4771e6869237d5e5865eaa610ad064a10"; 
+
+        // Base ID previously extracted from your URL:
+        const AIRTABLE_BASE_ID = "appoq5XXnZUKSusWX";       
+        
+        // This must match the name of the main table you set up in Airtable:
+        const AIRTABLE_TABLE_NAME = "SpecialDates";             
+        
+        // Your shared access password:
+        const SHARED_PASSCODE = "seven"; 
+        // ----------------------------------------------------
+
+        // Global Variables
+        let userId = 'partner-' + Math.random().toString(36).substring(2, 8); // Simple unique ID
+        let isDbDisabled = false;
+        let currentDates = []; 
+        let currentInterval = null; 
+
+        // DOM Elements 
+        const authStateEl = document.getElementById('auth-state');
+        const userInfoEl = document.getElementById('user-info');
+        const datesListEl = document.getElementById('dates-list');
+        const totalDatesEl = document.getElementById('total-dates');
+        const formEl = document.getElementById('add-date-form');
+        const dateNameInput = document.getElementById('date-name');
+        const dateInput = document.getElementById('date-input');
+        const dateDescriptionInput = document.getElementById('date-description');
+        const addDateBtn = document.getElementById('add-date-btn');
+        const listMessageEl = document.getElementById('list-message');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const exportBtn = document.getElementById('export-btn'); 
+        
+        // Lock screen elements
+        const lockScreenEl = document.getElementById('lock-screen');
+        const passcodeForm = document.getElementById('passcode-form');
+        const passcodeInput = document.getElementById('passcode-input'); 
+        const passcodeError = document.getElementById('passcode-error');
+
+        // --- Utility Functions (Keep as is) ---
+        
+        function getRelativeTime(dateString) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); 
+            const date = new Date(dateString + 'T00:00:00'); 
+
+            const diffTime = date.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return '<span class="text-yellow-600 font-bold">Today!</span> - Make it special!';
+            } else if (diffDays === 1) {
+                return '<span class="text-orange-600 font-bold">Tomorrow!</span> - Get ready!';
+            } else if (diffDays > 0) {
+                return `<span class="font-bold">${diffDays} day${diffDays !== 1 ? 's' : ''} left</span> - Counting down!`;
+            } else {
+                const daysPassed = Math.abs(diffDays);
+                return `<span class="text-green-600 font-bold">${daysPassed} day${daysPassed !== 1 ? 's' : ''} ago</span> - Cherished memory.`;
+            }
+        }
+        
+        function showConfirmModal(title, message, onConfirm) {
+            const container = document.getElementById('modal-container');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = message;
+
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            // Replace buttons to clear listeners
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                if (onConfirm && typeof onConfirm === 'function') {
+                    onConfirm();
+                }
+            });
+
+            newCancelBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            });
+            
+            if (title.includes("Error") || title.includes("Missing Info") || title === "Success!" || title.includes("Configuration Missing")) {
+                newCancelBtn.classList.add('hidden');
+                newConfirmBtn.textContent = (title === "Success!") ? "OK" : "Close";
+                newConfirmBtn.classList.remove('btn-primary', 'hover:bg-red-600');
+                newConfirmBtn.classList.add('bg-pink-500', 'hover:bg-pink-700');
+            } else {
+                newCancelBtn.classList.remove('hidden');
+                newConfirmBtn.textContent = "Confirm Delete";
+                newConfirmBtn.classList.add('btn-primary', 'hover:bg-red-600');
+                newConfirmBtn.classList.remove('bg-pink-500', 'hover:bg-pink-700');
+            }
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+        }
+
+        function exportToCSV() {
+            if (currentDates.length === 0) {
+                showConfirmModal("Export Failed", "There are no dates to export yet.", () => {});
+                return;
+            }
+            let csv = 'Name,Date,Description,Created By\n';
+            currentDates.forEach(date => {
+                const descriptionSafe = `"${(date.description || '').replace(/"/g, '""')}"`;
+                csv += `${date.name},${date.dateString},${descriptionSafe},${date.createdBy}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Our_Special_Dates_Shared.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showConfirmModal("Success!", "Dates exported as CSV.", () => {});
+        }
+        
+        /**
+         * Renders the list of dates from Airtable data.
+         * Note: Airtable uses 'fields' property for data, and 'id' for record ID.
+         */
+        function renderDates(dates) {
+            datesListEl.innerHTML = '';
+            
+            // Map Airtable's structure to our flat data structure for consistent processing
+            const processedDates = dates.map(record => ({
+                id: record.id,
+                name: record.fields.Name || 'Untitled Date', // Use Name from Airtable's primary field
+                dateString: record.fields.DateString || '',
+                description: record.fields.Description || '',
+                createdBy: record.fields.createdBy || 'Unknown',
+                createdAt: record.fields.createdAt,
+            }));
+            
+            currentDates = processedDates; 
+
+            // 1. Sort the dates
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            processedDates.sort((a, b) => {
+                // Safely handle missing dates
+                if (!a.dateString || !b.dateString) return 0; 
+                
+                const dateA = new Date(a.dateString + 'T00:00:00');
+                const dateB = new Date(b.dateString + 'T00:00:00');
+
+                const isUpcomingA = dateA >= today;
+                const isUpcomingB = dateB >= today;
+
+                if (isUpcomingA && !isUpcomingB) return -1; 
+                if (!isUpcomingA && isUpcomingB) return 1;  
+
+                if (isUpcomingA && isUpcomingB) {
+                    return dateA.getTime() - dateB.getTime();
+                } else {
+                    return dateB.getTime() - dateA.getTime();
+                }
+            });
+
+            totalDatesEl.textContent = `${processedDates.length} Date${processedDates.length !== 1 ? 's' : ''}`;
+            exportBtn.disabled = processedDates.length === 0;
+
+            if (processedDates.length === 0) {
+                let message = "No special dates yet! Add one using the form on the left. This list is shared!";
+                if (isDbDisabled) {
+                    message = "Connection details are **missing or incorrect**. Cannot sync or retrieve dates.";
+                }
+                datesListEl.innerHTML = `<p class="text-gray-500 italic text-center p-8">${message}</p>`;
+                return;
+            }
+
+            processedDates.forEach(date => {
+                if (!date.dateString) return; 
+
+                const dateObj = new Date(date.dateString + 'T00:00:00');
+                const relativeTime = getRelativeTime(date.dateString);
+                
+                const month = dateObj.toLocaleString('en-US', { month: 'short' });
+                const day = dateObj.getDate();
+                const year = dateObj.getFullYear();
+
+                const dateItem = document.createElement('div');
+                dateItem.className = 'date-item bg-white p-4 rounded-xl shadow-sm flex space-x-4 items-center';
+                dateItem.dataset.id = date.id;
+
+                dateItem.innerHTML = `
+                    <div class="flex-shrink-0 text-center p-2 bg-secondary-color rounded-lg w-16">
+                        <div class="text-xs font-medium text-primary-color uppercase leading-none">${month}</div>
+                        <div class="text-2xl font-bold text-gray-800 leading-none">${day}</div>
+                        <div class="text-xs font-medium text-gray-500 leading-none">${year}</div>
+                    </div>
+
+                    <div class="flex-grow min-w-0">
+                        <div class="text-xl font-semibold text-gray-800 truncate">${date.name}</div>
+                        <div class="text-sm text-gray-600 mt-0.5">${date.description || 'No description provided.'}</div>
+                        <div class="text-xs text-gray-500 mt-1">${relativeTime}</div>
+                    </div>
+
+                    <button class="delete-btn flex-shrink-0 text-red-400 hover:text-red-600 transition p-2 rounded-full hover:bg-red-50" data-id="${date.id}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                datesListEl.appendChild(dateItem);
+            });
+
+            // Attach delete listeners
+            datesListEl.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    const dateItem = datesListEl.querySelector(`[data-id="${id}"]`);
+                    // Use a slightly safer selector for the date name
+                    const dateName = dateItem ? (dateItem.querySelector('.text-xl') ? dateItem.querySelector('.text-xl').textContent : 'this date') : 'this date';
+                    
+                    showConfirmModal(
+                        "Delete Date?",
+                        `Are you sure you want to remove the special date: "${dateName}"? This syncs to all devices.`,
+                        () => deleteDate(id)
+                    );
+                });
+            });
+        }
+        
+
+        // --- Airtable CRUD & Polling ---
+        
+        const AIRTABLE_API_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+
+        /**
+         * Fetches all records from Airtable.
+         * This function is polled periodically to simulate real-time sync.
+         */
+        async function fetchDates() {
+            if (isDbDisabled) return;
+
+            listMessageEl.textContent = "Syncing shared memories...";
+            listMessageEl.classList.remove('hidden');
+
+            try {
+                const response = await fetch(AIRTABLE_API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${AIRTABLE_API_TOKEN}`,
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                renderDates(data.records || []);
+                listMessageEl.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Airtable Read Error:", error);
+                listMessageEl.textContent = `Error reading from Airtable. Check Base ID and API Token.`;
+                listMessageEl.classList.remove('hidden');
+                isDbDisabled = true; // Disable until a refresh
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Adds a new date to Airtable.
+         */
+        async function addDate(e) {
+            e.preventDefault();
+
+            if (isDbDisabled) {
+                showConfirmModal("Connection Error", "Cannot add date. Please check your Airtable configuration and try again.", () => {});
+                return;
+            }
+
+            const name = dateNameInput.value.trim();
+            const dateString = dateInput.value; 
+            const description = dateDescriptionInput.value.trim() || '';
+
+            if (!name || !dateString) {
+                showConfirmModal("Missing Info", "Please provide a name and a date.", () => {});
+                return;
+            }
+
+            addDateBtn.disabled = true;
+            document.getElementById('btn-text').textContent = 'Syncing...';
+            document.getElementById('btn-spinner').classList.remove('hidden');
+
+            try {
+                const payload = {
+                    fields: {
+                        // Note the field names must match the Airtable column names EXACTLY
+                        "Name": name, 
+                        "DateString": dateString,
+                        "Description": description,
+                        "createdBy": userId,
+                        "createdAt": new Date().toISOString()
+                    }
+                };
+
+                const response = await fetch(AIRTABLE_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AIRTABLE_API_TOKEN}`,
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to save date. Status: ${response.status}. Message: ${errorText}`);
+                }
+                
+                formEl.reset();
+                dateNameInput.focus();
+                await fetchDates(); // Immediate refresh after successful write
+
+            } catch (error) {
+                console.error("Error adding document to Airtable: ", error);
+                showConfirmModal("Error", `Could not save date: ${error.message}. Check your Airtable configuration.`, () => {});
+            } finally {
+                addDateBtn.disabled = false;
+                document.getElementById('btn-text').textContent = 'Add Shared Date';
+                document.getElementById('btn-spinner').classList.add('hidden');
+            }
+        }
+
+        /**
+         * Deletes a date from Airtable.
+         */
+        async function deleteDate(dateId) {
+            if (isDbDisabled) {
+                showConfirmModal("Connection Error", "Cannot delete date. Please check your Airtable configuration.", () => {});
+                return;
+            }
+
+            try {
+                const deleteUrl = `${AIRTABLE_API_URL}/${dateId}`;
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers:
